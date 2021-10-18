@@ -1,7 +1,34 @@
 ﻿<!DOCTYPE html>
 <html>
+<head>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+</head>
 <body>
     <div id="MainApiData">Data loading...</div>
+    <input id="XmlBtn" type="button" value="GetXMLData" onclick="GetData('text/xml')" />
+    <input id="CsvBtn" type="button" value="GetCsVData" onclick="GetData('text/csv')" />
 
 </body>
 </html>
+ <script type="text/javascript">
+     function GetData(contentType) {
+         $.ajax({
+             type: "GET",
+             url: "/Getdata",
+             headers: {
+                 "Accept": contentType,
+             },
+             success: function (msg) {
+                 if (contentType.indexOf('xml') !== -1)
+                     $('#MainApiData').text(new XMLSerializer().serializeToString(msg));
+                 else
+                     $('#MainApiData').text(msg);
+             },
+             error: function (xhr, status, error) {
+                 //debugger;
+                 $('#MainApiData').text(error + ": " + xhr.responseJSON);
+             }
+         });
+     }
+
+    </script>
