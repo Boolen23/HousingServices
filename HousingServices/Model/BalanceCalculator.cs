@@ -18,12 +18,20 @@ namespace HousingServices.Model
                 throw new Exception($"Не найдена информация о начислениях по AccountId {AccountId}");
             string _srcPaymentData = File.ReadAllText(@"Data\payment.json");
             calc.payments = JsonConvert.DeserializeObject<List<Payment>>(_srcPaymentData).Where(i => i.account_id == AccountId).ToList();
-
-            var OutlaySum = calc.balance.Sum(i => i.calculation);
-            var payments = calc.payments.Sum(i => i.sum);
             return calc;
         }
         private List<Balance> balance { get; set; }
         private List<Payment> payments { get; set; }
+        private double PaymentsByYear(int Year) =>
+            payments.Where(p => p.date.Year == Year).Sum(p => p.sum);
+
+        public void GroupByYear()
+        {
+            balance.GroupBy(gr => gr.period / 100).Select(i => new
+            {
+                Period = i.Key,
+                BeginBalance = i.Sum(j=> j.calculation)
+            });
+        }
     }
 }

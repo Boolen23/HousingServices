@@ -5,6 +5,8 @@
 </head>
 <body>
     <div id="MainApiData">Data loading...</div>
+    <input id="Account_ID" type="text" placeholder="Account_ID" />
+
     <input id="XmlBtn" type="button" value="GetXMLData" onclick="GetData('text/xml')" />
     <input id="CsvBtn" type="button" value="GetCsVData" onclick="GetData('text/csv')" />
 
@@ -14,6 +16,7 @@
      function GetData(contentType) {
          $.ajax({
              type: "GET",
+             data: { 'Account_ID': $('#Account_ID').val()},
              url: "/Getdata",
              headers: {
                  "Accept": contentType,

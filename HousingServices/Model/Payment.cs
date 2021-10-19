@@ -8,7 +8,7 @@ namespace HousingServices.Model
     public class Payment
     {
         public int account_id { get; set; }
-        public string date { get; set; }
+        public DateTime date { get; set; }
         public double sum { get; set; }
         public string payment_guid { get; set; }
     }

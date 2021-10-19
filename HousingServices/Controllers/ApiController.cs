@@ -1,4 +1,5 @@
 ﻿using HousingServices.Model;
+using HousingServices.ValidateAttribute;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -19,15 +20,16 @@ namespace HousingServices.Controllers
 
         [HttpGet("/Getdata")]
         [Produces("text/xml", "text/csv")]
-        public IActionResult Getdata()
+        [ValidateAccountIDParameter]
+        public IActionResult Getdata(string Account_ID)
         {
             try
             {
-                var t = BalanceCalculator.LoadByAccountId(22);
+                var t = BalanceCalculator.LoadByAccountId(int.Parse(Account_ID));
             }
             catch(Exception ex)
             {
-                Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                Response.StatusCode = (int)HttpStatusCode.NotFound;
                 return Json(ex.Message);
             }
             return Ok(Data());
