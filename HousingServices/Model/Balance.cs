@@ -12,4 +12,8 @@ namespace HousingServices.Model
         public double in_balance { get; set; }
         public double calculation { get; set; }
     }
+    public class BalanceList
+    {
+        public List<Balance> balance { get; set; }
+    }
 }

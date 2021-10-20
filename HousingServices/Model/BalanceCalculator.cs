@@ -9,67 +9,105 @@ namespace HousingServices.Model
 {
     public class BalanceCalculator
     {
+        public static double GetArrearsInPayment(int AccountId)
+        {
+            var data = LoadData(AccountId);
+
+            double TotalPayments = data.Payments.Sum(i => i.sum);
+            double TotalCalculation = data.Balance.Sum(i => i.calculation);
+            return Math.Abs(TotalPayments - TotalCalculation);
+        }
+
+        public static (List<Payment> Payments, List<Balance> Balance) LoadData(int AccountId)
+        {
+            string _srcFinanceData = File.ReadAllText(@"Data\balance.json");
+            var balance = JsonConvert.DeserializeObject<BalanceList>(_srcFinanceData).balance.Where(i => i.account_id == AccountId).ToList();
+            if (!balance.Any())
+                throw new Exception($"Не найдена информация о начислениях по AccountId {AccountId}");
+            string _srcPaymentData = File.ReadAllText(@"Data\payment.json");
+            var payments = JsonConvert.DeserializeObject<List<Payment>>(_srcPaymentData).Where(i => i.account_id == AccountId).ToList();
+            return (payments, balance);
+        }
+
         public static BalanceCalculator LoadByAccountId(int AccountId)
         {
             BalanceCalculator calc = new BalanceCalculator();
-            string _srcFinanceData = File.ReadAllText(@"Data\balance.json");
-            calc.balance = JsonConvert.DeserializeObject<FinanceData>(_srcFinanceData).balance.Where(i => i.account_id == AccountId).ToList();
-            if (!calc.balance.Any())
-                throw new Exception($"Не найдена информация о начислениях по AccountId {AccountId}");
-            string _srcPaymentData = File.ReadAllText(@"Data\payment.json");
-            calc.payments = JsonConvert.DeserializeObject<List<Payment>>(_srcPaymentData).Where(i => i.account_id == AccountId).ToList();
-            calc.CalcBalance = new List<CalcMonthBalance>();
-            var SortBalance = calc.balance.Select(i => new
+            var data = LoadData(AccountId);
+            calc.CalculateBalance(data.Balance, data.Payments);
+            return calc;
+        }
+        private List<BalanceSheet> CalcBalance { get; set; }
+        
+        private void CalculateBalance(List<Balance> balance, List<Payment> payments)
+        {
+            CalcBalance = new List<BalanceSheet>();
+            var SortBalance = balance.Select(i => new
             {
                 Date = new DateTime(i.period / 100, i.period % 100, 1),
                 Calculation = i.calculation,
                 InBalance = i.in_balance,
-            }).OrderBy(i=> i.Date).ToList();
+            }).OrderBy(i => i.Date).ToList();
 
-            double Saldo = SortBalance.First().InBalance; 
-            double FreeBalance = SortBalance.First().InBalance + 57.8; 
+            double StartBalance = SortBalance.First().InBalance;
+            double FreeBalance = SortBalance.First().InBalance + 57.8;
             foreach (var sb in SortBalance)
             {
-                double paym = calc.payments.Where(p => sb.Date.AddDays(-10) <= p.date && sb.Date.AddDays(21) >= p.date).Sum(p => p.sum);
+                double paym = payments.Where(p => sb.Date.AddDays(-10) <= p.date && sb.Date.AddDays(21) >= p.date).Sum(p => p.sum);
 
-                var cmb = new CalcMonthBalance()
+                var cmb = new BalanceSheet()
                 {
                     Date = sb.Date,
-                    Calculation = sb.Calculation, 
-                    StartBalance = Saldo,
+                    Calculation = sb.Calculation,
+                    InBalance = StartBalance,
                     Payments = paym,
+                    Period = $"{sb.Date.Year}{(sb.Date.Month < 10 ? "0" : "")}{sb.Date.Month}"
                 };
                 double GetByFreeBalance = 0;
                 if (FreeBalance > 0)
                 {
-                    GetByFreeBalance = FreeBalance >= Saldo + sb.Calculation ? Saldo + sb.Calculation : FreeBalance;
+                    GetByFreeBalance = FreeBalance >= StartBalance + sb.Calculation ? StartBalance + sb.Calculation : FreeBalance;
                     FreeBalance -= GetByFreeBalance;
                 }
-                Saldo = Math.Round(Saldo - paym - GetByFreeBalance, 2);
-                if(Saldo < 0)
+                StartBalance = Math.Round(StartBalance - paym - GetByFreeBalance, 2);
+                if (StartBalance < 0)
                 {
-                    FreeBalance += Math.Abs(Saldo);
-                    Saldo = 0;
+                    FreeBalance += Math.Abs(StartBalance);
+                    StartBalance = 0;
                 }
-                Saldo += sb.Calculation;
-                cmb.EndBalance = Saldo;
-                calc.CalcBalance.Add(cmb);
+                StartBalance += sb.Calculation;
+                cmb.OutBalance = StartBalance;
+                CalcBalance.Add(cmb);
             }
-            return calc;
         }
-        private List<CalcMonthBalance> CalcBalance { get; set; }
-        private List<Balance> balance { get; set; }
-        private List<Payment> payments { get; set; }
-        private double PaymentsByYear(int Year) =>
-            payments.Where(p => p.date.Year == Year).Sum(p => p.sum);
-
-        public void GroupByYear()
+        public List<BalanceSheet> GetReport(int Period)
         {
-            balance.GroupBy(gr => gr.period / 100).Select(i => new
+            if(Period == 1)
             {
-                Period = i.Key,
-                BeginBalance = i.Sum(j=> j.calculation)
-            });
+                return CalcBalance.OrderByDescending(i => i.Date).ToList();
+            }
+            if(Period == 2)
+            {
+                return CalcBalance.GroupBy(i => $"{i.Date.Year}_{((i.Date.Month - 1) / 3) + 1}").Select(i => new BalanceSheet()
+                {
+                    Period = i.Key,
+                    Calculation = i.Sum(j => j.Calculation),
+                    InBalance = i.Sum(j => j.InBalance),
+                    Payments = i.Sum(j => j.Payments),
+                    OutBalance = i.Sum(j => j.InBalance - j.Payments + j.Calculation)
+                }).OrderByDescending(i=> i.Period).ToList();
+            }
+            if(Period == 3)
+            {
+                return CalcBalance.GroupBy(i => i.Date.Year).Select(i => new BalanceSheet()
+                {
+                    Period = i.Key.ToString(),
+                    Calculation = i.Sum(j => j.Calculation),
+                    InBalance = i.Sum(j => j.InBalance),
+                    Payments = i.Sum(j => j.Payments),
+                    OutBalance = i.Sum(j => j.InBalance - j.Payments + j.Calculation)
+                }).OrderByDescending(i => i.Period).ToList();
+            }
+            return null;
         }
     }
 }

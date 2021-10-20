@@ -4,34 +4,83 @@
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 </head>
 <body>
-    <div id="MainApiData">Data loading...</div>
-    <input id="Account_ID" type="text" placeholder="Account_ID" />
+    <h3 style="text-align:center">Api client</h3>
+    <textarea rows="30" cols="20" id="MainApiData" style="width: 100%"></textarea>
 
-    <input id="XmlBtn" type="button" value="GetXMLData" onclick="GetData('text/xml')" />
-    <input id="CsvBtn" type="button" value="GetCsVData" onclick="GetData('text/csv')" />
+    <div style="padding-top: 10px"></div>
+
+
+    <div>
+        <input id="Account_ID" type="text" placeholder="Enter account id" style="padding-left:10px" />
+        <input id="XmlBtn" type="button" value="Generare XML" onclick="GetData('text/xml')" />
+        <input id="CsvBtn" type="button" value="Generate CSV" onclick="GetData('text/csv')" />
+        <input id="BtnArriers" type="button" value="GetArrearsInPayment" onclick="GetArrearsInPayment()" />
+    </div>
+
+    <div>
+        <label><input id="CbMonth" type="checkbox" onclick="SetCheckBoxes('Month')" style="padding-left:10px" />Month</label>
+        <label><input id="CbQuarter" type="checkbox" onclick="SetCheckBoxes('Quarter')" />Quarter</label>
+        <label><input id="CbYear" type="checkbox" value="Year" onclick="SetCheckBoxes('Year')" />Year</label>
+    </div>
+
 
 </body>
 </html>
- <script type="text/javascript">
-     function GetData(contentType) {
-         $.ajax({
-             type: "GET",
-             data: { 'Account_ID': $('#Account_ID').val()},
-             url: "/Getdata",
-             headers: {
-                 "Accept": contentType,
-             },
-             success: function (msg) {
-                 if (contentType.indexOf('xml') !== -1)
-                     $('#MainApiData').text(new XMLSerializer().serializeToString(msg));
-                 else
-                     $('#MainApiData').text(msg);
-             },
-             error: function (xhr, status, error) {
-                 //debugger;
-                 $('#MainApiData').text(error + ": " + xhr.responseJSON);
-             }
-         });
-     }
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#CbMonth").prop('checked', true);
+    });
 
-    </script>
+    function SetCheckBoxes(Period) {
+        $("#CbMonth").prop('checked', false);
+        $("#CbQuarter").prop('checked', false);
+        $("#CbYear").prop('checked', false);
+
+        $("#Cb" + Period).prop('checked', true);
+    }
+
+    function GetPeriod() {
+        return $("#CbMonth").prop('checked') === true ? 1 :
+            $("#CbQuarter").prop('checked') === true ? 2 :
+                $("#CbYear").prop('checked') === true ? 3 : 4;
+    }
+
+    function GetData(contentType) {
+        var Period = GetPeriod();
+        var Account_ID = $('#Account_ID').val();
+
+        $.ajax({
+            type: "GET",
+            data: { 'Account_ID': Account_ID, 'Period': Period },
+            url: "/GetBalances",
+            headers: {
+                "Accept": contentType,
+            },
+            success: function (msg) {
+                if (contentType.indexOf('xml') !== -1)
+                    $('#MainApiData').text(new XMLSerializer().serializeToString(msg));
+                else
+                    $('#MainApiData').text(msg);
+            },
+            error: function (xhr, status, error) {
+                $('#MainApiData').text(error + ": " + xhr.responseJSON);
+            }
+        });
+    }
+
+    function GetArrearsInPayment() {
+        var Account_ID = $('#Account_ID').val();
+        $.ajax({
+            type: "GET",
+            data: { 'Account_ID': Account_ID},
+            url: "/GetArrearsInPayment",
+            success: function (msg) {
+                $('#MainApiData').text(msg);
+            },
+            error: function (xhr, status, error) {
+                $('#MainApiData').text(error + ": " + xhr.responseJSON);
+            }
+        });
+    }
+
+</script>

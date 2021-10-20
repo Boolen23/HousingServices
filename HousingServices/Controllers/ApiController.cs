@@ -12,51 +12,37 @@ namespace HousingServices.Controllers
 {
     public class ApiController : Controller
     {
-        public ApiController()
-        {
-
-        }
         public IActionResult Index() => View();
 
-        [HttpGet("/Getdata")]
+        [ValidateParameter]
+        [HttpGet("/GetBalances")]
         [Produces("text/xml", "text/csv")]
-        [ValidateAccountIDParameter]
-        public IActionResult Getdata(string Account_ID)
+        public IActionResult GetBalances(string Account_ID, int Period)
         {
             try
             {
-                var t = BalanceCalculator.LoadByAccountId(int.Parse(Account_ID));
+                var bc = BalanceCalculator.LoadByAccountId(int.Parse(Account_ID));
+                return Ok(bc.GetReport(Period));
             }
             catch(Exception ex)
             {
                 Response.StatusCode = (int)HttpStatusCode.NotFound;
                 return Json(ex.Message);
             }
-            return Ok(Data());
         }
-
-        [HttpGet("/GetBalances")]
-        public IActionResult GetBalances()
+        [ValidateParameter]
+        [HttpGet("/GetArrearsInPayment")]
+        public IActionResult GetArrearsInPayment(string Account_ID)
         {
-            return Ok(Data());
-        }
-
-
-        private static IEnumerable<Balance> Data()
-        {
-            var model = new List<Balance>
+            try
             {
-                new Balance()
-                {
-                    account_id = 23
-                },
-                new Balance()
-                {
-                    account_id = 25
-                },
-            };
-
-            return model;
+                return Ok(BalanceCalculator.GetArrearsInPayment(int.Parse(Account_ID)));
+            }
+            catch (Exception ex)
+            {
+                Response.StatusCode = (int)HttpStatusCode.NotFound;
+                return Json(ex.Message);
+            }
         }
 
 
