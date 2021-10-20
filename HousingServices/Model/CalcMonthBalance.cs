@@ -9,9 +9,8 @@ namespace HousingServices.Model
     {
         public DateTime Date { get; set; }
         public double Calculation { get; set; }
-        public double EndBalance { get; set; }
         public double StartBalance { get; set; }
         public double Payments { get; set; }
-        public double Usl { get; set; }
+        public double EndBalance { get; set; }
     }
 }

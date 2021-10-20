@@ -26,44 +26,34 @@ namespace HousingServices.Model
                 InBalance = i.in_balance,
             }).OrderBy(i=> i.Date).ToList();
 
-            //double FreeMoney = SortBalance.First().InBalance;
-            double PrevCalc = SortBalance.First().InBalance;
-            double PrevStartBalance = 0;
+            double Saldo = SortBalance.First().InBalance; 
+            double FreeBalance = SortBalance.First().InBalance + 57.8; 
             foreach (var sb in SortBalance)
             {
-                double paym = calc.payments.Where(p => p.date.Year == sb.Date.Year && p.date.Month == sb.Date.Month).Sum(p => p.sum);
-                //if (InBalance == 0)
-                //{
-                //    InBalance += FreeMoney;
-                //    FreeMoney = 0;
-                //}
-                /*
-                double Balance = 0;
-                if (TotalPayments == 0 && TotalCalculation == 0)
-                    StartBalance = SBalance;
-                else
-                    StartBalance = TotalPayments - TotalCalculation;
-                */
+                double paym = calc.payments.Where(p => sb.Date.AddDays(-10) <= p.date && sb.Date.AddDays(21) >= p.date).Sum(p => p.sum);
 
-                /*
-                double Calc = 
-                TotalPayments += Payments;
-                TotalCalculation += sb.Calculation;
-                */
-                //FreeMoney += InBalance - sb.Calculation;
-                //double EndBalance = EndPrev + paym - sb.Calculation;
-                calc.CalcBalance.Add(new CalcMonthBalance()
+                var cmb = new CalcMonthBalance()
                 {
                     Date = sb.Date,
-                    Calculation = sb.Calculation, //sb.Calculation,
-                    StartBalance = PrevCalc,//StartBalance,
-                    EndBalance = sb.Calculation,//TotalPayments - TotalCalculation,
-                    Payments = paym,//Payments
-                    Usl = paym 
-                });
-                PrevCalc = sb.Calculation;
-                //EndPrev = EndBalance;
-                //StartBalance = EndBalance;
+                    Calculation = sb.Calculation, 
+                    StartBalance = Saldo,
+                    Payments = paym,
+                };
+                double GetByFreeBalance = 0;
+                if (FreeBalance > 0)
+                {
+                    GetByFreeBalance = FreeBalance >= Saldo + sb.Calculation ? Saldo + sb.Calculation : FreeBalance;
+                    FreeBalance -= GetByFreeBalance;
+                }
+                Saldo = Math.Round(Saldo - paym - GetByFreeBalance, 2);
+                if(Saldo < 0)
+                {
+                    FreeBalance += Math.Abs(Saldo);
+                    Saldo = 0;
+                }
+                Saldo += sb.Calculation;
+                cmb.EndBalance = Saldo;
+                calc.CalcBalance.Add(cmb);
             }
             return calc;
         }
