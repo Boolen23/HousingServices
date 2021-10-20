@@ -75,7 +75,7 @@
             data: { 'Account_ID': Account_ID},
             url: "/GetArrearsInPayment",
             success: function (msg) {
-                $('#MainApiData').text(msg);
+                $('#MainApiData').text('Client arrears:' + msg);
             },
             error: function (xhr, status, error) {
                 $('#MainApiData').text(error + ": " + xhr.responseJSON);

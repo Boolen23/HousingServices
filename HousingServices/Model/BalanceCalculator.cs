@@ -15,7 +15,7 @@ namespace HousingServices.Model
 
             double TotalPayments = data.Payments.Sum(i => i.sum);
             double TotalCalculation = data.Balance.Sum(i => i.calculation);
-            return Math.Abs(TotalPayments - TotalCalculation);
+            return Math.Round(Math.Abs(TotalPayments - TotalCalculation));
         }
 
         public static (List<Payment> Payments, List<Balance> Balance) LoadData(int AccountId)
